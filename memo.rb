@@ -13,6 +13,15 @@ def write_body(title, body)
   open("./memos/#{title}.txt", 'w') { |f| f.puts body }
 end
 
+Dir.mkdir('memos') unless Dir.exist?('./memos')
+
+id = if Dir.empty?('./memos')
+       0
+     else
+       last_name = Dir.glob('./memos/*').last
+       /^.\/memos\/(\d)_/.match(last_name)[1].to_i
+     end
+
 get '/' do
   @page_title = 'top'
   @titles = Dir.glob('./memos/*').map { |file| File.basename(file, '.*') }
@@ -26,14 +35,14 @@ get '/new' do
   erb :new_memo
 end
 
-post '/create' do
-  @title = params[:title]
+post '/memos' do
+  @title = params[:title].gsub("/",'-')
   @body = params[:body]
+  id += 1
 
   redirect to('/no_title_error') if params[:title].empty?
 
-  Dir.mkdir('memos') unless Dir.exist?('./memos')
-  write_body(@title, @body)
+  write_body("#{id}_#{@title}", @body)
 
   redirect to('/')
 end
