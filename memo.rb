@@ -1,28 +1,23 @@
+# frozen_string_literal: true
+
 require 'sinatra'
 require 'sinatra/reloader'
 
 enable :method_override
 
-helpers do
-  def h(text)
-    Rack::Utils.escape_html(text)
-  end
+def h(text)
+  Rack::Utils.escape_html(text)
+end
+
+def write_body(title, body)
+  open("./memos/#{title}.txt", 'w') { |f| f.puts body }
 end
 
 get '/' do
   @page_title = 'top'
-  titles = Dir.glob('./memos/*').map {|file| File.basename(file,'.*')}
+  @titles = Dir.glob('./memos/*').map { |file| File.basename(file, '.*') }
 
-  erb %{
-  <form action="/new" method="get">
-  <input type="submit" value="新規メモを作成">
-  </form>
-  <ul>
-    <% #{titles}.map do |title| %>
-    <li><a href="/memos/<%= title %>/"><%= title %></a></li>
-    <% end %>
-  </ul>
-  }
+  erb :top
 end
 
 get '/new' do
@@ -38,14 +33,14 @@ post '/create' do
   redirect to('/no_title_error') if params[:title].empty?
 
   Dir.mkdir('memos') unless Dir.exist?('./memos')
-  open("./memos/#{@title}.txt", 'w') { |f| f.puts "#{@body}" }
+  write_body(@title, @body)
 
   redirect to('/')
 end
 
 get '/memos/*/' do |title|
   @title = title
-  @body = File.open("./memos/#{title}.txt") { |f| f.read }.gsub("\r\n","<br>")
+  @body = h(File.open("./memos/#{title}.txt", &:read)).gsub("\r\n", '<br>')
 
   erb :memo_template
 end
@@ -59,7 +54,7 @@ end
 get '/memos/*/edit' do |title|
   @page_title = 'メモを編集'
   @title = title
-
+  @body = File.open("./memos/#{title}.txt") { |f| f.read }
   erb :memo_edit
 end
 
@@ -68,7 +63,8 @@ patch '/memos/*/update' do |title|
   @new_body = params[:body]
 
   redirect to('/no_title_error') if params[:title].empty?
-  open("./memos/#{title}.txt", 'w') { |f| f.puts "#{@new_body}" }
+
+  write_body(title, @new_body)
   File.rename("./memos/#{title}.txt", "./memos/#{@new_title}.txt")
 
   redirect to('/')
@@ -77,5 +73,5 @@ end
 get '/no_title_error' do
   @page_title = 'エラー'
 
-  erb %{ <h2>タイトルを入力して下さい</h2> }
+  erb %( <h2>タイトルを入力して下さい</h2> )
 end

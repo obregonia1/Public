@@ -1,8 +1,12 @@
 <form action="/memos/<%= @title %>/update" method="post">
   <input type="text" name="title" size="40" value="<%= @title %>">
   <h3>内容</h3>
-  <textarea name="body" rows="4" cols="40"><%= File.open("./memos/#{@title}.txt") { |f| f.read } %></textarea>
+  <textarea name="body" rows="4" cols="40"><%= @body %></textarea>
   <input type="hidden" name="_method" value="PATCH">
-  <div><input type="submit" value="編集内容を保存"></div>
+  <div>
+    <input type="submit" value="編集内容を保存">
+  </div>
 </form>
-<p><a href="/">top</a></p>
+<p>
+  <a href="/">top</a>
+</p>

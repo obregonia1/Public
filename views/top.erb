@@ -1,0 +1,10 @@
+<form action="/new" method="get">
+  <input type="submit" value="新規メモを作成">
+</form>
+<ul>
+  <% @titles.map do |title| %>
+    <li>
+      <a href="/memos/<%= title %>/"><%= title %></a>
+    </li>
+  <% end %>
+</ul>

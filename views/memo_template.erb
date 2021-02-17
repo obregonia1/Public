@@ -1,8 +1,8 @@
 <h2>
-  <%= h(@title) %>
+  <%= @title %>
 </h2>
 <div>
-  <p><%= h(@body) %></p>
+  <p><%= @body %></p>
 </div>
 <form action="/memos/<%= @title %>/edit" method="get">
   <input type="submit" value="編集">
