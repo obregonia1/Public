@@ -1,28 +1,37 @@
+# frozen_string_literal: true
+
 require 'sinatra'
 require 'sinatra/reloader'
+require 'pg'
 
 enable :method_override
 
-helpers do
-  def h(text)
-    Rack::Utils.escape_html(text)
-  end
+CONN = PG.connect(dbname: 'memoapp')
+
+create_str = 'CREATE TABLE if not exists memolist (title text not null unique, body text)'
+CONN.exec(create_str)
+
+prepare_str = 'INSERT into memolist (title,body) values ($1,$2)'
+CONN.prepare('add_memo', prepare_str)
+
+update_str = 'UPDATE memolist set title=$1, body=$2 where title=$3'
+CONN.prepare('update_memo', update_str)
+
+def h(text)
+  Rack::Utils.escape_html(text)
+end
+
+def get_body(title)
+  select_str = "SELECT body from memolist where title='#{title}'"
+  CONN.exec(select_str).values[0][0]
 end
 
 get '/' do
   @page_title = 'top'
-  titles = Dir.glob('./memos/*').map {|file| File.basename(file,'.*')}
+  memos = CONN.exec('SELECT * FROM memolist')
+  @titles = memos.map { |memo| memo['title'] }
 
-  erb %{
-  <form action="/new" method="get">
-  <input type="submit" value="新規メモを作成">
-  </form>
-  <ul>
-    <% #{titles}.map do |title| %>
-    <li><a href="/memos/<%= title %>/"><%= title %></a></li>
-    <% end %>
-  </ul>
-  }
+  erb :top
 end
 
 get '/new' do
@@ -37,21 +46,22 @@ post '/create' do
 
   redirect to('/no_title_error') if params[:title].empty?
 
-  Dir.mkdir('memos') unless Dir.exist?('./memos')
-  open("./memos/#{@title}.txt", 'w') { |f| f.puts "#{@body}" }
+  CONN.exec_prepared('add_memo', [@title.to_s, @body.to_s])
 
   redirect to('/')
 end
 
 get '/memos/*/' do |title|
-  @title = title
-  @body = File.open("./memos/#{title}.txt") { |f| f.read }.gsub("\r\n","<br>")
+  @page_title = title
+  @title = h(title)
+  @body = h(get_body(title)).gsub(/\R/, '<br>')
 
   erb :memo_template
 end
 
 delete '/memos/*/delete' do |title|
-  File.delete("./memos/#{title}.txt")
+  delete_str = "DELETE from memolist where title='#{title}'"
+  CONN.exec(delete_str)
 
   redirect to('/')
 end
@@ -59,6 +69,7 @@ end
 get '/memos/*/edit' do |title|
   @page_title = 'メモを編集'
   @title = title
+  @body = get_body(title)
 
   erb :memo_edit
 end
@@ -68,8 +79,8 @@ patch '/memos/*/update' do |title|
   @new_body = params[:body]
 
   redirect to('/no_title_error') if params[:title].empty?
-  open("./memos/#{title}.txt", 'w') { |f| f.puts "#{@new_body}" }
-  File.rename("./memos/#{title}.txt", "./memos/#{@new_title}.txt")
+
+  CONN.exec_prepared('update_memo', [@new_title.to_s, @new_body.to_s, title.to_s])
 
   redirect to('/')
 end
@@ -77,5 +88,5 @@ end
 get '/no_title_error' do
   @page_title = 'エラー'
 
-  erb %{ <h2>タイトルを入力して下さい</h2> }
+  erb %( <h2>タイトルを入力して下さい</h2> )
 end
