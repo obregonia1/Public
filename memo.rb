@@ -10,12 +10,12 @@ def h(text)
 end
 
 def fname_to_id(fname)
-  /^.\/memos\/(\d)_/.match(fname)
+  %r{^./memos/(\d)+_}.match(fname)
 end
 
 def id_to_title(id)
   memo_path = Dir.glob("./memos/#{id}_*").to_s
-  File.basename(memo_path, '.*').split(/^[\d]+_/)[1]
+  File.basename(memo_path, '.*').split(/^\d+_/)[1]
 end
 
 def write_body(title, body)
@@ -24,6 +24,10 @@ end
 
 def make_path(id, title)
   "./memos/#{id}_#{title}.txt"
+end
+
+def id_formatter(id)
+  format('%03d', id)
 end
 
 Dir.mkdir('memos') unless Dir.exist?('./memos')
@@ -49,13 +53,14 @@ get '/new' do
 end
 
 post '/memos' do
-  @title = params[:title].gsub("/",'-')
+  @title = params[:title].tr('/', '-')
   @body = params[:body]
   id += 1
+  format_id = id_formatter(id)
 
   redirect to('/no_title_error') if params[:title].empty?
 
-  write_body("#{id}_#{@title}", @body)
+  write_body("#{format_id}_#{@title}", @body)
 
   redirect to('/')
 end
@@ -80,7 +85,7 @@ get '/memos/*/edit' do |id|
   @page_title = 'メモを編集'
   @id = id
   @title = id_to_title(id)
-  @body = File.open(make_path(id, @title)) { |f| f.read }
+  @body = File.open(make_path(id, @title), &:read)
 
   erb :memo_edit
 end
