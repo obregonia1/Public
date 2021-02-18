@@ -40,13 +40,17 @@ id = if Dir.empty?('./memos')
      end
 
 get '/' do
+  redirect to('/memos')
+end
+
+get '/memos' do
   @page_title = 'top'
   @titles = Dir.glob('./memos/*').map { |file| File.basename(file, '.*') }
 
   erb :top
 end
 
-get '/new' do
+get '/memos/new' do
   @page_title = 'メモを新規作成'
 
   erb :new_memo
