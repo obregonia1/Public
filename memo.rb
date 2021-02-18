@@ -9,8 +9,21 @@ def h(text)
   Rack::Utils.escape_html(text)
 end
 
+def fname_to_id(fname)
+  /^.\/memos\/(\d)_/.match(fname)
+end
+
+def id_to_title(id)
+  memo_path = Dir.glob("./memos/#{id}_*").to_s
+  File.basename(memo_path, '.*').split(/^[\d]+_/)[1]
+end
+
 def write_body(title, body)
   open("./memos/#{title}.txt", 'w') { |f| f.puts body }
+end
+
+def make_path(id, title)
+  "./memos/#{id}_#{title}.txt"
 end
 
 Dir.mkdir('memos') unless Dir.exist?('./memos')
@@ -19,7 +32,7 @@ id = if Dir.empty?('./memos')
        0
      else
        last_name = Dir.glob('./memos/*').last
-       /^.\/memos\/(\d)_/.match(last_name)[1].to_i
+       fname_to_id(last_name)[1].to_i
      end
 
 get '/' do
@@ -47,34 +60,40 @@ post '/memos' do
   redirect to('/')
 end
 
-get '/memos/*/' do |title|
-  @title = title
-  @body = h(File.open("./memos/#{title}.txt", &:read)).gsub("\r\n", '<br>')
+get '/memos/*/' do |id|
+  @id = id
+  @title = h(id_to_title(id))
+  @body = h(File.open(make_path(id, @title), &:read)).gsub("\r\n", '<br>')
+  @page_title = @title
 
   erb :memo_template
 end
 
-delete '/memos/*/delete' do |title|
-  File.delete("./memos/#{title}.txt")
+delete '/memos/*/delete' do |id|
+  title = id_to_title(id)
+  File.delete(make_path(id, title))
 
   redirect to('/')
 end
 
-get '/memos/*/edit' do |title|
+get '/memos/*/edit' do |id|
   @page_title = 'メモを編集'
-  @title = title
-  @body = File.open("./memos/#{title}.txt") { |f| f.read }
+  @id = id
+  @title = id_to_title(id)
+  @body = File.open(make_path(id, @title)) { |f| f.read }
+
   erb :memo_edit
 end
 
-patch '/memos/*/update' do |title|
+patch '/memos/*/update' do |id|
   @new_title = params[:title]
   @new_body = params[:body]
+  old_title = id_to_title(id)
 
   redirect to('/no_title_error') if params[:title].empty?
 
-  write_body(title, @new_body)
-  File.rename("./memos/#{title}.txt", "./memos/#{@new_title}.txt")
+  write_body("#{id}_#{old_title}", @new_body)
+  File.rename(make_path(id, old_title), make_path(id, @new_title))
 
   redirect to('/')
 end
