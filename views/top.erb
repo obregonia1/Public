@@ -2,10 +2,10 @@
   <input type="submit" value="新規メモを作成">
 </form>
 <ul>
-  <% @titles.map do |title| %>
-    <% id = title.match(/^[\d]+/) %>
+  <% @ids.map do |id| %>
+    <% title = get_contains(id)["title"] %>
     <li>
-      <a href="/memos/<%= id %>/"><%= title.split(/^[\d]+_/)[1] %></a>
+      <a href="/memos/<%= id %>/"><%= title %></a>
     </li>
   <% end %>
 </ul>
