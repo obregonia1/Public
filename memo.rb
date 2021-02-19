@@ -15,7 +15,7 @@ end
 
 def write_memo(id, title, body)
   File.open("./memos/#{id}.json", 'w') do |file|
-    hash = { 'title' => title.to_s, 'body' => body.to_s }
+    hash = { title: title, body: body }
     JSON.dump(hash, file)
   end
 end
@@ -27,7 +27,7 @@ get '/' do
 end
 
 get '/memos' do
-  @page_title = 'top'
+  @page_title = 'メモ一覧'
 
   files = Dir.glob('./memos/*')
   files.sort_by! { |file| File.new(file).birthtime }
@@ -63,7 +63,7 @@ get '/memos/*/' do |id|
   erb :memo_template
 end
 
-delete '/memos/*/delete' do |id|
+delete '/memos/*' do |id|
   path = "./memos/#{id}.json"
   File.delete(path)
 
@@ -79,7 +79,7 @@ get '/memos/*/edit' do |id|
   erb :memo_edit
 end
 
-patch '/memos/*/update' do |id|
+patch '/memos/*' do |id|
   new_title = params[:title]
   new_body = params[:body]
 

@@ -7,7 +7,7 @@
 <form action="/memos/<%= @id %>/edit" method="get">
   <input type="submit" value="編集">
 </form>
-<form action="/memos/<%= @id %>/delete" method="post">
+<form action="/memos/<%= @id %>" method="post">
   <input type="hidden" name="_method" value="DELETE">
   <input type="submit" value="削除">
 </form>
