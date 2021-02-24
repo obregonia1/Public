@@ -2,9 +2,10 @@
   <input type="submit" value="新規メモを作成">
 </form>
 <ul>
-  <% @titles.map do |title| %>
+<!--  <p>@memos</p>-->
+  <% @memos.each do |id, title| %>
     <li>
-      <a href="/memos/<%= title %>/"><%= title %></a>
+      <a href="/memos/<%= id %>/"><%= title[0] %></a>
     </li>
   <% end %>
 </ul>

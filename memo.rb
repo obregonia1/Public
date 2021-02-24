@@ -3,33 +3,49 @@
 require 'sinatra'
 require 'sinatra/reloader'
 require 'pg'
+require 'securerandom'
 
 enable :method_override
 
 CONN = PG.connect(dbname: 'memoapp')
 
-create_str = 'CREATE TABLE if not exists memolist (title text not null unique, body text)'
+create_str = 'CREATE TABLE if not exists memolist (id text not null unique, title text not null unique, body text)'
 CONN.exec(create_str)
 
-prepare_str = 'INSERT into memolist (title,body) values ($1,$2)'
-CONN.prepare('add_memo', prepare_str)
+add_str = 'INSERT into memolist (id,title,body) values ($1,$2,$3)'
+CONN.prepare('add_memo', add_str)
 
-update_str = 'UPDATE memolist set title=$1, body=$2 where title=$3'
+update_str = 'UPDATE memolist set title=$1, body=$2 where id=$3'
 CONN.prepare('update_memo', update_str)
+
+get_title_str = 'SELECT title from memolist where id=$1'
+CONN.prepare('get_title', get_title_str)
 
 def h(text)
   Rack::Utils.escape_html(text)
 end
 
-def get_body(title)
-  select_str = "SELECT body from memolist where title='#{title}'"
-  CONN.exec(select_str).values[0][0]
+def get_body(id)
+  select_str = "SELECT body from memolist where id='#{id}'"
+  CONN.prepare('get_body', select_str)
+  CONN.exec_prepared('get_body').values[0][0]
+end
+
+def get_title(id)
+  CONN.exec_prepared('get_title', [id]).values[0]
 end
 
 get '/' do
-  @page_title = 'top'
-  memos = CONN.exec('SELECT * FROM memolist')
-  @titles = memos.map { |memo| memo['title'] }
+  redirect to('/memos')
+end
+
+get '/memos' do
+  @page_title = 'メモ一覧'
+  ids = CONN.exec('SELECT id FROM memolist').map { |res| res.values[0] }
+  @memos = {}
+  ids.each do |id|
+    @memos[id] = get_title(id)
+  end
 
   erb :top
 end
