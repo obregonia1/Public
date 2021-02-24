@@ -1,0 +1,14 @@
+<h2>
+  <%= @title %>
+</h2>
+<div>
+  <p><%= @body %></p>
+</div>
+<form action="/memos/<%= @id %>/edit" method="get">
+  <input type="submit" value="編集">
+</form>
+<form action="/memos/<%= @id %>" method="post">
+  <input type="hidden" name="_method" value="DELETE">
+  <input type="submit" value="削除">
+</form>
+<p><a href="/memos">top</a></p>
